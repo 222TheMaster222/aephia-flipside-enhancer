@@ -23,11 +23,17 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: List Files in Directory
+        run: ls -la
+
       - name: Update Lookup File
         env:
           RPC_ENDPOINT: ${{ secrets.RPC_ENDPOINT }}
           # You can add additional secrets here if needed for Star Atlas queries.
         run: node updateLookup.js
+
+      - name: List Files in Directory
+        run: ls -la
 
       - name: Commit Updated Lookup File
         run: |
