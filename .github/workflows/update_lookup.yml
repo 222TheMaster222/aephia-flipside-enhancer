@@ -1,0 +1,40 @@
+name: Update Lookup File
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # This runs daily at midnight UTC; adjust as needed
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-lookup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Or your preferred version
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Update Lookup File
+        env:
+          RPC_ENDPOINT: ${{ secrets.RPC_ENDPOINT }}
+          # You can add additional secrets here if needed for Star Atlas queries.
+        run: node updateLookup.js
+
+      - name: Commit Updated Lookup File
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add lookup.json
+          # Only commit if there are changes (exit with code 0 if no changes)
+          git diff --quiet && echo "No changes to commit" || git commit -m "Update lookup file [skip ci]"
+
+      - name: Push Changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
