@@ -52,7 +52,7 @@ jobs:
           author_name: GitHub Action
           author_email: action@github.com
           message: 'Updating lookup file'
-          add: 'lookup.json --force'
+          add: 'lookup.json'
 
       - name: Push Changes
         uses: ad-m/github-push-action@v0.6.0
