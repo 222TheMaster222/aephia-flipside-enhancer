@@ -23,28 +23,11 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: List Files in Directory
-        run: ls -la
-
       - name: Update Lookup File
         env:
           RPC_ENDPOINT: ${{ secrets.RPC_ENDPOINT }}
           # You can add additional secrets here if needed for Star Atlas queries.
         run: node updateLookup.js
-
-      - name: List Files in Directory
-        run: ls -la
-
-      # You can make whatever type of change to the repo...
-      - run: echo "123" > ./file.txt
-
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: GitHub Action
-          author_email: action@github.com
-          message: 'Updating lookup file'
-          add: '*.txt --force'
 
       - name: Commit lookup.json changes
         uses: EndBug/add-and-commit@v9
@@ -53,9 +36,3 @@ jobs:
           author_email: action@github.com
           message: 'Updating lookup file'
           add: 'lookup.json'
-
-      - name: Push Changes
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main   # Ensure this matches your primary branch
