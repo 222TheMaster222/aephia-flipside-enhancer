@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'  # This runs daily at midnight UTC; adjust as needed
   workflow_dispatch:  # Allow manual triggering
 
+permissions:
+  contents: write     # Grants the workflow write access to repository contents.
+
 jobs:
   update-lookup:
     runs-on: ubuntu-latest
