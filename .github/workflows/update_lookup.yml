@@ -27,14 +27,10 @@ jobs:
         env:
           RPC_ENDPOINT: ${{ secrets.RPC_ENDPOINT }}
           # You can add additional secrets here if needed for Star Atlas queries.
-        run: 
-          ls
-          node updateLookup.js
-          ls
+        run: node updateLookup.js
 
       - name: Commit Updated Lookup File
         run: |
-          ls
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git add .

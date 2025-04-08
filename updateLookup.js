@@ -38,7 +38,7 @@ async function fetchLookupData() {
 async function updateLookupFile() {
     try {
         const lookupData = await fetchLookupData();
-        const filePath = path.join(__dirname, 'lookup.json');
+        const filePath = 'lookup.json';
         fs.writeFileSync(filePath, JSON.stringify(lookupData, null, 2));
         console.log('Lookup file updated successfully.', filePath);
     } catch (err) {
