@@ -33,7 +33,7 @@ jobs:
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
-          git add lookup.json
+          git add .
           # Only commit if there are changes (exit with code 0 if no changes)
           git diff --quiet && echo "No changes to commit" || git commit -m "Update lookup file [skip ci]"
 
