@@ -23,8 +23,6 @@
 
 ![With Enhancer](images/screenshot_with.png)
 
-*Note: Replace `images/screenshot_without.png` and `images/screenshot_with.png` with the actual locations of your screenshots.*
-
 ## How to Install
 
 ### Step 1: Install Tampermonkey
