@@ -47,4 +47,7 @@ async function updateLookupFile() {
     }
 }
 
-updateLookupFile();
+console.log('start script')
+updateLookupFile().finally(x => {
+    console.log('end script')
+});
