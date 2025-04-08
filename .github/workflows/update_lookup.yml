@@ -35,6 +35,14 @@ jobs:
       - name: List Files in Directory
         run: ls -la
 
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: GitHub Action
+          author_email: action@github.com
+          message: 'Updating lookup file'
+          add: '*.js'
+
       - name: Commit Updated Lookup File
         run: |
           git config --global user.email "action@github.com"
