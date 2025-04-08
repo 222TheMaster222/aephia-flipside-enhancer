@@ -35,13 +35,16 @@ jobs:
       - name: List Files in Directory
         run: ls -la
 
+      # You can make whatever type of change to the repo...
+      - run: echo "123" > ./file.txt
+
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
         with:
           author_name: GitHub Action
           author_email: action@github.com
           message: 'Updating lookup file'
-          add: '*.js'
+          add: '*.txt --force'
 
       - name: Commit Updated Lookup File
         run: |
