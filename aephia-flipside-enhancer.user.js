@@ -65,4 +65,5 @@
 
     // Run the data fetching function.
     fetchLookupData();
+    var x = 1;
 })();
