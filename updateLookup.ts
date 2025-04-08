@@ -48,6 +48,6 @@ async function updateLookupFile() {
 }
 
 console.log('start script')
-updateLookupFile().finally(x => {
+updateLookupFile().finally(() => {
     console.log('end script')
 });
