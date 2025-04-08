@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Aephia Flipside Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.0.1
 // @description  Enhance Aephia dashboards on Flipside by replacing public keys with display names using GM_xmlhttpRequest to fetch the lookup file.
 // @match        https://flipsidecrypto.xyz/Aephia/*
 // @downloadURL  https://raw.githubusercontent.com/222TheMaster222/aephia-flipside-enhancer/main/aephia-flipside-enhancer.user.js
@@ -65,5 +65,4 @@
 
     // Run the data fetching function.
     fetchLookupData();
-    var x = 1;
 })();
