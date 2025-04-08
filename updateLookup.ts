@@ -1,14 +1,61 @@
-const fs = require('fs');
-const path = require('path');
+import dotenv from 'dotenv';
+dotenv.config();
+import fs from 'fs';
+import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
+import { AnchorProvider, Program, Wallet } from "@staratlas/anchor";
+import { byteArrayToString, readAllFromRPC } from "@staratlas/data-source";
+import { PLAYER_PROFILE_IDL, PlayerProfileIDLProgram } from "@staratlas/player-profile";
+import { Fleet, SAGE_IDL, SageIDLProgram } from "@staratlas/sage";
+import { Sage } from "@staratlas/sage/dist/src/idl/sage";
 
-// Example: Import your Star Atlas packages (uncomment and adjust as needed)
-// const { someStarAtlasFunction } = require('star-atlas-package');
+const SAGE_PROGRAM_ID = new PublicKey('SAGE2HAwep459SNq61LHvjxPk4pLPEJLoMETef7f7EE');
+const PLAYER_PROFILE_ID = new PublicKey('pprofELXjL5Kck7Jn5hCpwAL82DpTkSYBENzahVtbc9');
 
-// Replace this async function with your actual data fetching logic
+class FakeWallet {
+
+    private payer: Keypair;
+
+    constructor(payer: Keypair) {
+        this.payer = payer;
+    }
+
+    signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
+        throw 'not implemented - signTransaction'
+    }
+
+    signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> {
+        throw 'not implemented - signAllTransactions'
+    }
+
+    get publicKey(): PublicKey {
+        return this.payer.publicKey;
+    }
+}
+
 async function fetchLookupData() {
-    // For example, connect to Solana RPC using the RPC_ENDPOINT environment variable:
-    // const rpcEndpoint = process.env.RPC_ENDPOINT || 'https://api.mainnet-beta.solana.com';
-    // Use star atlas npm packages to fetch and process data.
+
+    const rpcEndpoint: string = process.env.RPC_ENDPOINT
+    const connection = new Connection(rpcEndpoint, { commitment: "confirmed" })
+
+    const provider = new AnchorProvider(
+        connection,
+        new FakeWallet(Keypair.generate()),
+        AnchorProvider.defaultOptions(),
+    );
+
+    const sage = new Program(SAGE_IDL, SAGE_PROGRAM_ID, provider);
+    const playerProfile = new Program(PLAYER_PROFILE_IDL, PLAYER_PROFILE_ID, provider);
+
+
+    const fleets = await getFleets(connection, sage);
+
+    const data: Record<string, string> = fleets.reduce((acc, f) => {
+        acc[f.key.toBase58()] = byteArrayToString(f.data.fleetLabel);
+        return acc;
+      }, {} as Record<string, string>);
+
+      return data;
+
     //
     // This dummy implementation returns hardcoded lookup data:
     return {
@@ -51,3 +98,17 @@ console.log('start script')
 updateLookupFile().finally(() => {
     console.log('end script')
 });
+
+
+
+
+async function getFleets(connection: Connection, program: Program<Sage>): Promise<Fleet[]> {
+
+    return (await readAllFromRPC(
+        connection,
+        program,
+        Fleet,
+        'confirmed'))
+        .filter(p => p.type === 'ok')
+        .map(p => (p as any).data as Fleet);
+}
