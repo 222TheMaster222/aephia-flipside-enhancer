@@ -46,6 +46,14 @@ jobs:
           message: 'Updating lookup file'
           add: '*.txt --force'
 
+      - name: Commit lookup.json changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: GitHub Action
+          author_email: action@github.com
+          message: 'Updating lookup file'
+          add: 'lookup.json --force'
+
       - name: Commit Updated Lookup File
         run: |
           git config --global user.email "action@github.com"
