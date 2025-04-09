@@ -15,8 +15,6 @@
 
     // URL of the lookup JSON file hosted on GitHub.
     const lookupUrl = "https://raw.githubusercontent.com/222TheMaster222/aephia-flipside-enhancer/main/lookup.json";
-    const KEY_MAX_LENGTH = 44;
-    const KEY_MIN_LENGTH = 32;
     /**
      * Scans all table cells and replaces matching public keys with display names.
      * @param {Object} lookupData - Mapping of public keys to display names.
@@ -25,9 +23,7 @@
         const tds = document.querySelectorAll("td");
         tds.forEach(td => {
             const trimmedText = td.textContent.trim();
-            const textLength = trimmedText.length;
-            const isKeyLength = textLength >= KEY_MIN_LENGTH && textLength <= KEY_MAX_LENGTH;
-            if (isKeyLength && lookupData.hasOwnProperty(trimmedText)) {
+            if (lookupData.hasOwnProperty(trimmedText)) {
                 td.textContent = lookupData[trimmedText];
             }
         });
