@@ -3,9 +3,11 @@ import { AnchorProvider, Program } from "@staratlas/anchor";
 import { readAllFromRPC } from "@staratlas/data-source";
 import { PLAYER_PROFILE_IDL, PlayerName, PlayerProfile, PlayerProfileIDLProgram } from "@staratlas/player-profile";
 import { Fleet, SAGE_IDL, SageIDLProgram } from "@staratlas/sage";
+import { bs58 } from "@staratlas/anchor/dist/cjs/utils/bytes";
 
 const SAGE_PROGRAM_ID = new PublicKey('SAGE2HAwep459SNq61LHvjxPk4pLPEJLoMETef7f7EE');
 const PLAYER_PROFILE_ID = new PublicKey('pprofELXjL5Kck7Jn5hCpwAL82DpTkSYBENzahVtbc9');
+const GAME_ID = new PublicKey('GAMEzqJehF8yAnKiTARUuhZMvLvkZVAsCVri5vSfemLr');
 
 export type RpcContext = {
     connection: Connection;
@@ -34,12 +36,19 @@ export function createRpcContext(endpoint: string): RpcContext {
 }
 
 export async function getFleets(context: RpcContext): Promise<Fleet[]> {
+    const gameId58 = bs58.encode(GAME_ID.toBuffer())
 
     return (await readAllFromRPC(
         context.connection,
         context.sage,
         Fleet,
-        'confirmed'))
+        'confirmed',
+        [{
+            memcmp: {
+                offset: 8 + 1,
+                bytes: gameId58,
+            }
+        }]))
         .filter(p => p.type === 'ok')
         .map(p => (p as any).data as Fleet);
 }
