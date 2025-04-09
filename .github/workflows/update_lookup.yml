@@ -23,14 +23,10 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Compile TypeScript
-        run: npx tsc
-
       - name: Update Lookup File
         env:
           RPC_ENDPOINT: ${{ secrets.RPC_ENDPOINT }}
-        run: node dist/updateLookup.js
-
+        run: npm run update-lookup
 
       - name: Commit lookup.json changes
         uses: EndBug/add-and-commit@v9
