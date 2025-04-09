@@ -3,9 +3,52 @@ import fs from 'fs';
 import { byteArrayToString } from "@staratlas/data-source";
 import { createRpcContext, getFleets, getPlayerNames, getPlayerProfiles } from 'rpc';
 
+const LOOKUP_FILE = 'lookup.json'
+
 dotenv.config();
 
-async function fetchLookupData() {
+type LookupData = Record<string, string>
+
+async function updateLookupFile() {
+    try {
+
+        const existingData = getLookupDataFromFile();
+        const newData = await getLookupDataFromRpc();
+
+        // Merge using the spread operator; values in newData will override those in existingData.
+        const mergedData = { ...existingData, ...newData };
+
+        // Sort the keys of the data object and rebuild the object.
+        const sortedData = Object.keys(mergedData)
+            .sort()
+            .reduce((acc, key) => {
+                acc[key] = mergedData[key];
+                return acc;
+            }, {} as LookupData);
+
+        fs.writeFileSync(LOOKUP_FILE, JSON.stringify(sortedData, null, 2));
+        console.log('Lookup file updated successfully.', LOOKUP_FILE);
+    } catch (err) {
+        console.error('Error updating lookup file:', err);
+        process.exit(1);
+    }
+}
+
+function getLookupDataFromFile(): LookupData {
+
+    if (fs.existsSync(LOOKUP_FILE)) {
+        console.log('reading existing lookup data from disk', LOOKUP_FILE)
+        const json = fs.readFileSync(LOOKUP_FILE, 'utf8')
+        return JSON.parse(json) as LookupData
+    }
+
+    console.log('lookup data not found on disk')
+
+    return {};
+}
+
+async function getLookupDataFromRpc() {
+    console.log('fetching lookup data from rpc')
 
     const rpcEndpoint: string = process.env.RPC_ENDPOINT
 
@@ -27,7 +70,7 @@ async function fetchLookupData() {
     let data = playerProfiles.reduce((acc, x) => {
         acc[x.key.toBase58()] = playerNameMapObject[x.key.toBase58()];
         return acc;
-    }, {} as Record<string, string>)
+    }, {} as LookupData)
 
     // Merge fleets mapping into data.
     data = fleets.reduce((acc, f) => {
@@ -41,21 +84,9 @@ async function fetchLookupData() {
         .reduce((acc, key) => {
             acc[key] = data[key];
             return acc;
-        }, {} as Record<string, string>);
+        }, {} as LookupData);
 
     return sortedData;
-}
-
-async function updateLookupFile() {
-    try {
-        const lookupData = await fetchLookupData();
-        const filePath = 'lookup.json';
-        fs.writeFileSync(filePath, JSON.stringify(lookupData, null, 2));
-        console.log('Lookup file updated successfully.', filePath);
-    } catch (err) {
-        console.error('Error updating lookup file:', err);
-        process.exit(1);
-    }
 }
 
 console.log('start script')
