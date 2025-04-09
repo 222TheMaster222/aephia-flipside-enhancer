@@ -1,120 +1,95 @@
 import dotenv from 'dotenv';
-dotenv.config();
 import fs from 'fs';
-import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
-import { AnchorProvider, Program, Wallet } from "@staratlas/anchor";
-import { byteArrayToString, readAllFromRPC } from "@staratlas/data-source";
-import { PLAYER_PROFILE_IDL, PlayerName, PlayerProfile, PlayerProfileIDLProgram } from "@staratlas/player-profile";
-import { Fleet, SAGE_IDL, SageIDLProgram } from "@staratlas/sage";
+import { byteArrayToString } from "@staratlas/data-source";
+import { createRpcContext, getFleets, getPlayerNames, getPlayerProfiles } from 'rpc';
 
-const SAGE_PROGRAM_ID = new PublicKey('SAGE2HAwep459SNq61LHvjxPk4pLPEJLoMETef7f7EE');
-const PLAYER_PROFILE_ID = new PublicKey('pprofELXjL5Kck7Jn5hCpwAL82DpTkSYBENzahVtbc9');
+const LOOKUP_FILE = 'lookup.json'
 
-class FakeWallet {
+dotenv.config();
 
-    private payer: Keypair;
-
-    constructor(payer: Keypair) {
-        this.payer = payer;
-    }
-
-    signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
-        throw 'not implemented - signTransaction'
-    }
-
-    signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> {
-        throw 'not implemented - signAllTransactions'
-    }
-
-    get publicKey(): PublicKey {
-        return this.payer.publicKey;
-    }
-}
-
-async function fetchLookupData() {
-
-    const rpcEndpoint: string = process.env.RPC_ENDPOINT
-    const connection = new Connection(rpcEndpoint, { commitment: "confirmed" })
-
-    const provider = new AnchorProvider(
-        connection,
-        new FakeWallet(Keypair.generate()),
-        AnchorProvider.defaultOptions(),
-    );
-
-    const sageProgram = new Program(SAGE_IDL, SAGE_PROGRAM_ID, provider);
-    const playerProfileProgram = new Program(PLAYER_PROFILE_IDL, PLAYER_PROFILE_ID, provider);
-
-    const [playerProfiles, playerNames, fleets] = await Promise.all([
-        getPlayerProfiles(connection, playerProfileProgram),
-        getPlayerNames(connection, playerProfileProgram),
-        getFleets(connection, sageProgram),
-    ])
-
-    const playerNameMapObject = playerNames.reduce((acc, x) => {
-        acc[x.data.profile.toBase58()] = x.name;
-        return acc;
-    }, {});
-
-    let data = playerProfiles.reduce((acc, x) => {
-        acc[x.key.toBase58()] = playerNameMapObject[x.key.toBase58()];
-        return acc;
-    }, {} as Record<string, string>)
-
-    data = fleets.reduce((acc, f) => {
-        acc[f.key.toBase58()] = byteArrayToString(f.data.fleetLabel);
-        return acc;
-    }, data);
-
-    return data;
-}
+type LookupData = Record<string, string>
 
 async function updateLookupFile() {
     try {
-        const lookupData = await fetchLookupData();
-        const filePath = 'lookup.json';
-        fs.writeFileSync(filePath, JSON.stringify(lookupData, null, 2));
-        console.log('Lookup file updated successfully.', filePath);
+
+        const existingData = getLookupDataFromFile();
+        const newData = await getLookupDataFromRpc();
+
+        // Merge using the spread operator; values in newData will override those in existingData.
+        const mergedData = { ...existingData, ...newData };
+
+        // Sort the keys of the data object and rebuild the object.
+        const sortedData = Object.keys(mergedData)
+            .sort()
+            .reduce((acc, key) => {
+                acc[key] = mergedData[key];
+                return acc;
+            }, {} as LookupData);
+
+        fs.writeFileSync(LOOKUP_FILE, JSON.stringify(sortedData, null, 2));
+        console.log('Lookup file updated successfully.', LOOKUP_FILE);
     } catch (err) {
         console.error('Error updating lookup file:', err);
         process.exit(1);
     }
 }
 
+function getLookupDataFromFile(): LookupData {
+
+    if (fs.existsSync(LOOKUP_FILE)) {
+        console.log('reading existing lookup data from disk', LOOKUP_FILE)
+        const json = fs.readFileSync(LOOKUP_FILE, 'utf8')
+        return JSON.parse(json) as LookupData
+    }
+
+    console.log('lookup data not found on disk')
+
+    return {};
+}
+
+async function getLookupDataFromRpc() {
+    console.log('fetching lookup data from rpc')
+
+    const rpcEndpoint: string = process.env.RPC_ENDPOINT
+
+    const context = createRpcContext(rpcEndpoint);
+
+    const [playerProfiles, playerNames, fleets] = await Promise.all([
+        getPlayerProfiles(context),
+        getPlayerNames(context),
+        getFleets(context),
+    ])
+
+    // Build mapping for player names based on playerNames array.
+    const playerNameMapObject = playerNames.reduce((acc, x) => {
+        acc[x.data.profile.toBase58()] = x.name;
+        return acc;
+    }, {});
+
+    // Start with player profiles mapping.
+    let data = playerProfiles.reduce((acc, x) => {
+        acc[x.key.toBase58()] = playerNameMapObject[x.key.toBase58()];
+        return acc;
+    }, {} as LookupData)
+
+    // Merge fleets mapping into data.
+    data = fleets.reduce((acc, f) => {
+        acc[f.key.toBase58()] = byteArrayToString(f.data.fleetLabel);
+        return acc;
+    }, data);
+
+    // Sort the keys of the data object and rebuild the object.
+    const sortedData = Object.keys(data)
+        .sort()
+        .reduce((acc, key) => {
+            acc[key] = data[key];
+            return acc;
+        }, {} as LookupData);
+
+    return sortedData;
+}
+
 console.log('start script')
 updateLookupFile().finally(() => {
     console.log('end script')
 });
-
-async function getFleets(connection: Connection, program: SageIDLProgram): Promise<Fleet[]> {
-
-    return (await readAllFromRPC(
-        connection,
-        program,
-        Fleet,
-        'confirmed'))
-        .filter(p => p.type === 'ok')
-        .map(p => (p as any).data as Fleet);
-}
-
-async function getPlayerProfiles(connection: Connection, program: PlayerProfileIDLProgram): Promise<PlayerProfile[]> {
-
-    return (await readAllFromRPC(
-        connection,
-        program,
-        PlayerProfile,
-        'confirmed'))
-        .filter(p => p.type === 'ok')
-        .map(p => (p as any).data as PlayerProfile);
-}
-
-async function getPlayerNames(connection: Connection, program: PlayerProfileIDLProgram): Promise<PlayerName[]> {
-
-    return (await readAllFromRPC(
-        connection,
-        program,
-        PlayerName,
-        'confirmed'))
-        .filter(p => p.type === 'ok')
-        .map(p => (p as any).data as PlayerName);
-}
