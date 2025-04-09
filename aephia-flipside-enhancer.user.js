@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Aephia Flipside Enhancer
 // @namespace    http://tampermonkey.net/
-// @version      0.0.2
+// @version      0.0.3
 // @description  Enhance Aephia dashboards on Flipside by replacing public keys with display names using GM_xmlhttpRequest to fetch the lookup file.
 // @match        https://flipsidecrypto.xyz/Aephia/*
 // @downloadURL  https://raw.githubusercontent.com/222TheMaster222/aephia-flipside-enhancer/main/aephia-flipside-enhancer.user.js
@@ -10,13 +10,13 @@
 // @run-at       document-idle
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     // URL of the lookup JSON file hosted on GitHub.
     const lookupUrl = "https://raw.githubusercontent.com/222TheMaster222/aephia-flipside-enhancer/main/lookup.json";
-    const EXPECTED_KEY_LENGTH = 44; // Adjust this if your public keys differ in length.
-
+    const KEY_MAX_LENGTH = 44;
+    const KEY_MIN_LENGTH = 32;
     /**
      * Scans all table cells and replaces matching public keys with display names.
      * @param {Object} lookupData - Mapping of public keys to display names.
@@ -25,7 +25,9 @@
         const tds = document.querySelectorAll("td");
         tds.forEach(td => {
             const trimmedText = td.textContent.trim();
-            if (trimmedText.length === EXPECTED_KEY_LENGTH && lookupData.hasOwnProperty(trimmedText)) {
+            const textLength = trimmedText.length;
+            const isKeyLength = textLength >= KEY_MIN_LENGTH && textLength <= KEY_MAX_LENGTH;
+            if (isKeyLength && lookupData.hasOwnProperty(trimmedText)) {
                 td.textContent = lookupData[trimmedText];
             }
         });
@@ -38,7 +40,7 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: lookupUrl,
-            onload: function(response) {
+            onload: function (response) {
                 if (response.status === 200) {
                     try {
                         let lookupData = JSON.parse(response.responseText);
@@ -57,7 +59,7 @@
                     console.error("Failed to fetch lookup data. Status:", response.status);
                 }
             },
-            onerror: function(err) {
+            onerror: function (err) {
                 console.error("GM_xmlhttpRequest error:", err);
             }
         });
