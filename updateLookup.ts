@@ -17,22 +17,33 @@ async function fetchLookupData() {
         getFleets(context),
     ])
 
+    // Build mapping for player names based on playerNames array.
     const playerNameMapObject = playerNames.reduce((acc, x) => {
         acc[x.data.profile.toBase58()] = x.name;
         return acc;
     }, {});
 
+    // Start with player profiles mapping.
     let data = playerProfiles.reduce((acc, x) => {
         acc[x.key.toBase58()] = playerNameMapObject[x.key.toBase58()];
         return acc;
     }, {} as Record<string, string>)
 
+    // Merge fleets mapping into data.
     data = fleets.reduce((acc, f) => {
         acc[f.key.toBase58()] = byteArrayToString(f.data.fleetLabel);
         return acc;
     }, data);
 
-    return data;
+    // Sort the keys of the data object and rebuild the object.
+    const sortedData = Object.keys(data)
+        .sort()
+        .reduce((acc, key) => {
+            acc[key] = data[key];
+            return acc;
+        }, {} as Record<string, string>);
+
+    return sortedData;
 }
 
 async function updateLookupFile() {
